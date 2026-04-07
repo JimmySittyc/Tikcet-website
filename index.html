@@ -2,90 +2,171 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Theatre Seat Reservation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teatro Don Bosco</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-6">
+<body class="bg-gray-900 text-white flex flex-col items-center p-6">
 
   <h1 class="text-3xl font-bold mb-6">🎭 Teatro Don Bosco</h1>
 
-  <div id="seat-container" class="grid grid-cols-10 gap-2"></div>
+  <!-- User Name Input -->
+  <div class="mb-4">
+    <input 
+      type="text" 
+      id="userName" 
+      placeholder="Enter your name" 
+      class="px-3 py-2 rounded text-black w-64"
+    />
+  </div>
 
-  <button id="reserveBtn" class="mt-6 bg-blue-600 px-6 py-2 rounded hover:bg-blue-700">
-    Continue to Reservation
+  <!-- Seat Legend -->
+  <div class="flex gap-4 mb-6">
+    <div class="flex items-center gap-2">
+      <div class="w-5 h-5 bg-gray-400 rounded"></div>
+      <span>Available</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-5 h-5 bg-red-500 rounded"></div>
+      <span>Taken</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-5 h-5 bg-blue-500 rounded"></div>
+      <span>Selected</span>
+    </div>
+  </div>
+
+  <!-- Seat Grid -->
+  <div id="seat-container" class="grid grid-cols-10 gap-2 mb-6"></div>
+
+  <!-- Pay & Reserve Button -->
+  <button 
+    id="payReserveBtn"
+    class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded text-lg"
+  >
+    💳 Pay & Reserve
   </button>
 
-  <script>
-    const container = document.getElementById("seat-container");
+  <!-- Firebase + App Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    const rows = ["A","B","C","D","E"];
-    const seatsPerRow = 10;
+    // 🔥 Replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+    };
 
-    let seats = [];
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    // Create seats
-    rows.forEach(row => {
-      for (let i = 1; i <= seatsPerRow; i++) {
-        const seatId = row + i;
+    // UI Elements
+    const seatContainer = document.getElementById("seat-container");
+    const payReserveBtn = document.getElementById("payReserveBtn");
+    const userNameInput = document.getElementById("userName");
 
-        // Mock some taken seats
-        const isTaken = Math.random() < 0.2;
+    const rows = 8;
+    const cols = 10;
+    let selectedSeatId = null;
 
-        seats.push({
-          id: seatId,
-          status: isTaken ? "taken" : "available"
-        });
-      }
-    });
-
-    function renderSeats() {
-      container.innerHTML = "";
-
-      seats.forEach(seat => {
-        const div = document.createElement("div");
-        div.innerText = seat.id;
-
-        let color = "bg-gray-500";
-
-        if (seat.status === "taken") color = "bg-red-500";
-        if (seat.status === "selected") color = "bg-green-500";
-
-        div.className = `
-          ${color}
-          w-10 h-10 flex items-center justify-center
-          rounded cursor-pointer text-sm
-        `;
-
-        div.onclick = () => handleSeatClick(seat.id);
-
-        container.appendChild(div);
+    // Load seats from Firestore
+    async function loadSeats() {
+      seatContainer.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "seats"));
+      const takenSeats = new Set();
+      querySnapshot.forEach(doc => {
+        if (doc.data().taken) takenSeats.add(doc.id);
       });
+      renderSeats(takenSeats);
     }
 
-    function handleSeatClick(id) {
-      const seat = seats.find(s => s.id === id);
+    // Render seats
+    function renderSeats(takenSeats) {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const seatId = String.fromCharCode(65 + r) + (c + 1);
+          const seat = document.createElement("div");
 
-      if (seat.status === "taken") return;
+          seat.innerText = seatId;
+          seat.className = "w-10 h-10 flex items-center justify-center rounded text-sm";
 
-      seat.status = seat.status === "selected" ? "available" : "selected";
+          if (takenSeats.has(seatId)) {
+            seat.classList.add("bg-red-500");
+          } else {
+            seat.classList.add("bg-gray-400", "cursor-pointer");
 
-      renderSeats();
+            seat.addEventListener("click", () => {
+              const allSeats = document.querySelectorAll("#seat-container div");
+              allSeats.forEach(s => {
+                if (!s.classList.contains("bg-red-500")) {
+                  s.classList.remove("bg-blue-500");
+                  s.classList.add("bg-gray-400");
+                }
+              });
+
+              seat.classList.remove("bg-gray-400");
+              seat.classList.add("bg-blue-500");
+              selectedSeatId = seatId;
+            });
+          }
+
+          seatContainer.appendChild(seat);
+        }
+      }
     }
 
-    document.getElementById("reserveBtn").onclick = () => {
-      const selected = seats.filter(s => s.status === "selected");
-
-      if (selected.length === 0) {
-        alert("Please select at least one seat.");
+    // Simulated Payment + Reserve
+    payReserveBtn.addEventListener("click", async () => {
+      const name = userNameInput.value.trim();
+      if (!name) {
+        alert("Please enter your name!");
+        return;
+      }
+      if (!selectedSeatId) {
+        alert("Select a seat first!");
         return;
       }
 
-      alert("Selected seats: " + selected.map(s => s.id).join(", "));
-    };
+      // Simulate payment processing
+      payReserveBtn.disabled = true;
+      payReserveBtn.innerText = "Processing Payment... 💳";
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    renderSeats();
+      // Save reservation to Firestore
+      await setDoc(doc(db, "seats", selectedSeatId), {
+        taken: true,
+        user: name,
+        timestamp: Date.now()
+      });
+
+      // Show ticket
+      showTicket(selectedSeatId, name);
+
+      // Reset UI
+      selectedSeatId = null;
+      userNameInput.value = "";
+      payReserveBtn.disabled = false;
+      payReserveBtn.innerText = "💳 Pay & Reserve";
+
+      loadSeats();
+    });
+
+    // Show ticket in new window
+    function showTicket(seatId, name) {
+      const ticketWindow = window.open("", "Ticket", "width=300,height=200");
+      ticketWindow.document.write(`
+        <h1 style="text-align:center;">🎟️ Teatro Don Bosco</h1>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Seat:</strong> ${seatId}</p>
+        <p style="margin-top:20px; text-align:center;">Enjoy the show!</p>
+      `);
+    }
+
+    // Initial load
+    loadSeats();
   </script>
-
 </body>
 </html>
