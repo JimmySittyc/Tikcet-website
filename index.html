@@ -50,18 +50,34 @@
 
   <!-- Firebase + App Logic -->
   <script type="module">
+    // ✅ Firebase CDN Imports (MODULAR SDK)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      collection, 
+      getDocs 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // 🔥 Replace with your Firebase config
+    // ✅ Your Firebase Config (CONNECTED)
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
+      apiKey: "AIzaSyDIy47-9kwKCtaJu75oln7lMBpxUphWA_A",
+      authDomain: "don-bosco-theater.firebaseapp.com",
+      projectId: "don-bosco-theater",
+      storageBucket: "don-bosco-theater.firebasestorage.app",
+      messagingSenderId: "270986848021",
+      appId: "1:270986848021:web:49e21ab57699ca4eb32b1c"
     };
 
+    // ✅ Initialize Firebase
     const app = initializeApp(firebaseConfig);
+
+    // ✅ Initialize Firestore
     const db = getFirestore(app);
+
+    // ✅ Confirmation log
+    console.log("🔥 Firestore Database connected successfully!");
 
     // UI Elements
     const seatContainer = document.getElementById("seat-container");
@@ -75,11 +91,16 @@
     // Load seats from Firestore
     async function loadSeats() {
       seatContainer.innerHTML = "";
+
       const querySnapshot = await getDocs(collection(db, "seats"));
       const takenSeats = new Set();
-      querySnapshot.forEach(doc => {
-        if (doc.data().taken) takenSeats.add(doc.id);
+
+      querySnapshot.forEach(docSnap => {
+        if (docSnap.data().taken) {
+          takenSeats.add(docSnap.id);
+        }
       });
+
       renderSeats(takenSeats);
     }
 
@@ -100,6 +121,7 @@
 
             seat.addEventListener("click", () => {
               const allSeats = document.querySelectorAll("#seat-container div");
+
               allSeats.forEach(s => {
                 if (!s.classList.contains("bg-red-500")) {
                   s.classList.remove("bg-blue-500");
@@ -109,6 +131,7 @@
 
               seat.classList.remove("bg-gray-400");
               seat.classList.add("bg-blue-500");
+
               selectedSeatId = seatId;
             });
           }
@@ -121,29 +144,36 @@
     // Simulated Payment + Reserve
     payReserveBtn.addEventListener("click", async () => {
       const name = userNameInput.value.trim();
+
       if (!name) {
         alert("Please enter your name!");
         return;
       }
+
       if (!selectedSeatId) {
         alert("Select a seat first!");
         return;
       }
 
-      // Simulate payment processing
-      payReserveBtn.disabled = true;
-      payReserveBtn.innerText = "Processing Payment... 💳";
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        payReserveBtn.disabled = true;
+        payReserveBtn.innerText = "Processing Payment... 💳";
 
-      // Save reservation to Firestore
-      await setDoc(doc(db, "seats", selectedSeatId), {
-        taken: true,
-        user: name,
-        timestamp: Date.now()
-      });
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Show ticket
-      showTicket(selectedSeatId, name);
+        // Save to Firestore
+        await setDoc(doc(db, "seats", selectedSeatId), {
+          taken: true,
+          user: name,
+          timestamp: Date.now()
+        });
+
+        showTicket(selectedSeatId, name);
+
+      } catch (error) {
+        console.error("Error reserving seat:", error);
+        alert("Something went wrong. Check console.");
+      }
 
       // Reset UI
       selectedSeatId = null;
@@ -154,9 +184,10 @@
       loadSeats();
     });
 
-    // Show ticket in new window
+    // Show ticket
     function showTicket(seatId, name) {
       const ticketWindow = window.open("", "Ticket", "width=300,height=200");
+
       ticketWindow.document.write(`
         <h1 style="text-align:center;">🎟️ Teatro Don Bosco</h1>
         <p><strong>Name:</strong> ${name}</p>
