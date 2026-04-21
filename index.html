@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Teatro Don Bosco | Premium Experience</title>
+  <title>Teatro Don Bosco | iOS 26 Experience</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
@@ -11,7 +11,7 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: radial-gradient(circle at top left, #1e293b, #0f172a, #000000);
       min-height: 100vh;
-      overflow: hidden;
+      overflow-x: hidden;
     }
     .glass-card {
       background: rgba(255, 255, 255, 0.03);
@@ -33,10 +33,16 @@
     }
     .snack-card.selected {
       border-color: #3b82f6;
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(59, 130, 246, 0.15);
+      transform: translateY(-4px);
     }
-    .seat { transition: all 0.2s ease; }
+    .seat { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .seat:active { transform: scale(0.9); }
     .hidden-step { display: none; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
   </style>
 </head>
 
@@ -45,29 +51,42 @@
   <div class="glass-card w-full max-w-2xl p-8 shadow-2xl relative z-10">
     <header class="text-center mb-6">
         <h1 class="text-4xl font-semibold tracking-tight mb-2">Teatro Don Bosco</h1>
-        <p class="text-gray-400 text-sm">Secure Seat Reservation</p>
+        <p class="text-gray-400 text-sm">Experience the art of performance</p>
     </header>
 
     <div class="mb-6">
-      <input type="text" id="userName" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-center text-lg font-light"/>
+      <input 
+        type="text" id="userName" placeholder="Reservation Name" 
+        class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-center text-lg font-light placeholder:text-gray-600"
+      />
     </div>
 
     <div class="mb-8">
-      <div class="flex bg-white/5 p-1 rounded-xl max-w-xs mx-auto">
-        <button id="adultMode" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white/10">Adult $15</button>
-        <button id="childMode" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-500">Child $8</button>
+      <p class="text-[10px] uppercase tracking-widest text-gray-500 text-center mb-3">Ticket Type</p>
+      <div class="flex bg-white/5 p-1 rounded-2xl max-w-xs mx-auto border border-white/5">
+        <button id="adultMode" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white/10">Adult $15</button>
+        <button id="childMode" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-gray-500">Child $8</button>
       </div>
     </div>
 
-    <div id="seat-container" class="grid grid-cols-10 gap-2 mb-10 justify-center"></div>
+    <div class="w-full h-1 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent mb-12 relative">
+        <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.4em] text-gray-600">Stage</span>
+    </div>
 
-    <button id="openPaymentBtn" class="w-full bg-white text-black font-semibold py-5 rounded-3xl active:scale-[0.97] transition-all flex flex-col items-center justify-center shadow-2xl">
+    <div class="flex justify-center mb-10 overflow-x-auto pb-4">
+        <div id="seat-container" class="grid grid-cols-10 gap-2 sm:gap-3"></div>
+    </div>
+
+    <button 
+      id="openPaymentBtn"
+      class="w-full bg-white text-black font-semibold py-5 rounded-[2rem] active:scale-[0.97] transition-all flex flex-col items-center justify-center shadow-2xl"
+    >
       <span id="btnText">Select Seats</span>
-      <span class="text-[10px] opacity-60 uppercase">Continue to Checkout</span>
+      <span class="text-[10px] opacity-60 uppercase tracking-tighter">Continue to Checkout</span>
     </button>
   </div>
 
-  <div id="paymentOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-20"></div>
+  <div id="paymentOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 z-20"></div>
   
   <div id="paymentSheet" class="payment-sheet fixed bottom-0 left-0 right-0 z-30 bg-[#1c1c1e] rounded-t-[2.5rem] p-8 pb-12 shadow-[0_-20px_40px_rgba(0,0,0,0.5)] max-w-2xl mx-auto border-t border-white/10">
     <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-8"></div>
@@ -75,51 +94,48 @@
     <div id="step1">
       <h2 class="text-2xl font-semibold mb-6 text-center">Payment Method</h2>
       <div class="space-y-4">
-        <button onclick="goToSnacks('QR')" class="w-full flex items-center gap-4 bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
-          <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-xl text-blue-400">📱</div>
-          <div class="text-left"><p class="font-semibold">QR Transfer</p><p class="text-xs text-gray-500">Instant banking</p></div>
+        <button onclick="goToSnacks('QR')" class="w-full flex items-center gap-4 bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all group">
+          <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-xl text-blue-400 group-hover:scale-110 transition-transform">📱</div>
+          <div class="text-left"><p class="font-semibold">QR Transfer</p><p class="text-xs text-gray-500">Instant scan via banking app</p></div>
         </button>
-        <button onclick="goToSnacks('Card')" class="w-full flex items-center gap-4 bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
-          <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-xl text-purple-400">💳</div>
-          <div class="text-left"><p class="font-semibold">Credit Card</p><p class="text-xs text-gray-500">Visa / Mastercard</p></div>
+        <button onclick="goToSnacks('Card')" class="w-full flex items-center gap-4 bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all group">
+          <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-xl text-purple-400 group-hover:scale-110 transition-transform">💳</div>
+          <div class="text-left"><p class="font-semibold">Credit / Debit Card</p><p class="text-xs text-gray-500">Visa, Mastercard, or Amex</p></div>
         </button>
       </div>
     </div>
 
     <div id="step2" class="hidden-step">
-      <h2 class="text-2xl font-semibold mb-1 text-center">Enjoy the Show?</h2>
-      <p class="text-gray-500 text-sm text-center mb-8">Add a snack to complete your experience</p>
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-semibold mb-1">Make it a Combo?</h2>
+        <p class="text-gray-500 text-sm">Add snacks to enjoy the show</p>
+      </div>
       
       <div class="grid grid-cols-2 gap-4 mb-8">
-        <div id="snack-popcorn" onclick="toggleSnack('popcorn', 7)" class="snack-card p-6 rounded-3xl text-center cursor-pointer">
-          <div class="text-4xl mb-3">🍿</div>
+        <div id="snack-popcorn" onclick="toggleSnack('popcorn')" class="snack-card p-6 rounded-[2rem] text-center cursor-pointer border border-white/5 active:scale-95 transition-all">
+          <div class="text-5xl mb-3">🍿</div>
           <p class="font-bold">Popcorn</p>
-          <p class="text-xs text-gray-400">Large • $7.00</p>
+          <p class="text-[10px] text-blue-400 font-semibold tracking-widest mt-1">+$7.00</p>
+          <div id="popcorn-label" class="opacity-0 mt-2 text-blue-500 text-[10px] font-bold">● ADDED</div>
         </div>
-        <div id="snack-soda" onclick="toggleSnack('soda', 5)" class="snack-card p-6 rounded-3xl text-center cursor-pointer">
-          <div class="text-4xl mb-3">🥤</div>
+        <div id="snack-soda" onclick="toggleSnack('soda')" class="snack-card p-6 rounded-[2rem] text-center cursor-pointer border border-white/5 active:scale-95 transition-all">
+          <div class="text-5xl mb-3">🥤</div>
           <p class="font-bold">Soda</p>
-          <p class="text-xs text-gray-400">Chilled • $5.00</p>
+          <p class="text-[10px] text-blue-400 font-semibold tracking-widest mt-1">+$5.00</p>
+          <div id="soda-label" class="opacity-0 mt-2 text-blue-500 text-[10px] font-bold">● ADDED</div>
         </div>
       </div>
 
-      <div class="border-t border-white/5 pt-6 mb-6">
-        <div class="flex justify-between text-sm text-gray-400 mb-2">
-            <span>Seats Subtotal</span>
-            <span id="seatPriceLabel">$0</span>
-        </div>
-        <div class="flex justify-between text-lg font-bold">
-            <span>Final Total</span>
-            <span id="finalTotalLabel">$0</span>
-        </div>
+      <div class="bg-white/5 rounded-2xl p-5 mb-6 space-y-2 border border-white/5">
+        <div class="flex justify-between text-xs text-gray-400"><span>Tickets Subtotal</span><span id="seatPriceLabel">$0.00</span></div>
+        <div id="snackRow" class="flex justify-between text-xs text-gray-400" style="display:none;"><span>Snack Add-ons</span><span id="snackPriceLabel">+$0.00</span></div>
+        <div class="flex justify-between text-xl font-semibold border-t border-white/10 pt-3 mt-2"><span>Total</span><span id="finalTotalLabel">$0.00</span></div>
       </div>
 
-      <button onclick="finalizeTransaction()" class="w-full bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
-        Pay & Confirm
-      </button>
+      <button onclick="finalizeTransaction()" class="w-full bg-white text-black font-bold py-5 rounded-[1.5rem] shadow-xl active:scale-[0.98] transition-all">Confirm & Pay</button>
     </div>
 
-    <button id="closeSheetBtn" class="w-full mt-6 py-2 text-gray-600 text-sm font-medium">Cancel</button>
+    <button id="closeSheetBtn" class="w-full mt-6 py-2 text-gray-600 text-sm font-medium hover:text-white transition-colors">Cancel</button>
   </div>
 
   <script type="module">
@@ -144,17 +160,17 @@
     let chosenMethod = '';
     const PRICES = { adult: 15, child: 8, popcorn: 7, soda: 5 };
 
-    // Mode Toggles
-    document.getElementById('adultMode').onclick = () => setType('adult');
-    document.getElementById('childMode').onclick = () => setType('child');
+    // --- Ticket Mode Logic ---
+    document.getElementById('adultMode').onclick = (e) => setType('adult', e.target);
+    document.getElementById('childMode').onclick = (e) => setType('child', e.target);
 
-    function setType(type) {
+    function setType(type, btn) {
       currentTicketType = type;
-      document.getElementById('adultMode').className = type === 'adult' ? 'flex-1 py-2 rounded-lg text-xs font-bold bg-white/10' : 'flex-1 py-2 rounded-lg text-xs font-bold text-gray-500';
-      document.getElementById('childMode').className = type === 'child' ? 'flex-1 py-2 rounded-lg text-xs font-bold bg-white/10' : 'flex-1 py-2 rounded-lg text-xs font-bold text-gray-500';
+      document.getElementById('adultMode').className = type === 'adult' ? 'flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white/10' : 'flex-1 py-2 rounded-xl text-xs font-bold transition-all text-gray-500';
+      document.getElementById('childMode').className = type === 'child' ? 'flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white/10' : 'flex-1 py-2 rounded-xl text-xs font-bold transition-all text-gray-500';
     }
 
-    // Load and Render
+    // --- Render Grid ---
     async function loadSeats() {
       const querySnapshot = await getDocs(collection(db, "seats"));
       const taken = new Set();
@@ -170,16 +186,19 @@
           const id = String.fromCharCode(65 + r) + c;
           const seat = document.createElement('div');
           seat.innerText = id;
-          seat.className = `seat w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-[9px] font-bold border border-white/5 ${taken.has(id) ? 'opacity-20' : 'bg-white/10 text-white/40 cursor-pointer hover:bg-white/20'}`;
+          seat.className = `seat w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-[8px] font-bold border border-white/5 ${taken.has(id) ? 'opacity-10' : 'bg-white/10 text-white/40 cursor-pointer hover:bg-white/20'}`;
           
           if(!taken.has(id)) {
             seat.onclick = () => {
               if(selectedSeats.has(id)) {
                 selectedSeats.delete(id);
-                seat.className = "seat w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-[9px] font-bold border border-white/5 bg-white/10 text-white/40 cursor-pointer hover:bg-white/20";
+                seat.className = "seat w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-[8px] font-bold border border-white/5 bg-white/10 text-white/40 cursor-pointer hover:bg-white/20";
+                seat.innerHTML = id;
               } else {
                 selectedSeats.set(id, { type: currentTicketType, price: PRICES[currentTicketType] });
-                seat.className = `seat w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-[9px] font-bold border border-white/5 ${currentTicketType === 'adult' ? 'bg-blue-500' : 'bg-purple-500'} text-white shadow-lg cursor-pointer`;
+                const color = currentTicketType === 'adult' ? 'bg-blue-600' : 'bg-purple-600';
+                seat.className = `seat w-7 h-7 sm:w-9 sm:h-9 flex flex-col items-center justify-center rounded-lg text-[8px] font-bold border border-white/10 ${color} text-white shadow-lg cursor-pointer`;
+                seat.innerHTML = `<span>${id}</span><span class="text-[6px] opacity-70">${currentTicketType[0].toUpperCase()}</span>`;
               }
               document.getElementById('btnText').innerText = selectedSeats.size > 0 ? `Reserve ${selectedSeats.size} Seats` : "Select Seats";
             };
@@ -189,9 +208,12 @@
       }
     }
 
-    // Payment Flow
+    // --- Payment Navigation ---
     document.getElementById('openPaymentBtn').onclick = () => {
-      if(!document.getElementById('userName').value || selectedSeats.size === 0) return alert("Fill name and pick seats");
+      if(!document.getElementById('userName').value.trim() || selectedSeats.size === 0) {
+          alert("Please enter your name and select at least one seat.");
+          return;
+      }
       document.getElementById('paymentSheet').classList.add('active');
       document.getElementById('paymentOverlay').classList.replace('opacity-0', 'opacity-100');
       document.getElementById('paymentOverlay').classList.remove('pointer-events-none');
@@ -201,31 +223,38 @@
       chosenMethod = method;
       document.getElementById('step1').classList.add('hidden-step');
       document.getElementById('step2').classList.remove('hidden-step');
-      calculateFinalTotal();
+      calculateTotals();
     };
 
-    window.toggleSnack = (snack, price) => {
+    window.toggleSnack = (snack) => {
       selectedSnacks[snack] = !selectedSnacks[snack];
       document.getElementById(`snack-${snack}`).classList.toggle('selected');
-      calculateFinalTotal();
+      document.getElementById(`${snack}-label`).classList.toggle('opacity-0');
+      calculateTotals();
     };
 
-    function calculateFinalTotal() {
+    function calculateTotals() {
       let seatTotal = 0;
       selectedSeats.forEach(v => seatTotal += v.price);
       let snackTotal = (selectedSnacks.popcorn ? PRICES.popcorn : 0) + (selectedSnacks.soda ? PRICES.soda : 0);
+      
+      document.getElementById('snackRow').style.display = snackTotal > 0 ? 'flex' : 'none';
       document.getElementById('seatPriceLabel').innerText = `$${seatTotal}.00`;
+      document.getElementById('snackPriceLabel').innerText = `+$${snackTotal}.00`;
       document.getElementById('finalTotalLabel').innerText = `$${seatTotal + snackTotal}.00`;
     }
 
+    // --- Database Submission ---
     window.finalizeTransaction = async () => {
-      document.getElementById('step2').innerHTML = `<div class="py-20 text-center animate-pulse"><p class="text-xl font-semibold">Finalizing Payment...</p></div>`;
+      document.getElementById('step2').innerHTML = `<div class="py-20 text-center animate-pulse"><p class="text-xl font-semibold">Authorizing Transaction...</p></div>`;
       
       const batch = writeBatch(db);
       selectedSeats.forEach((data, id) => {
         batch.set(doc(db, "seats", id), {
           taken: true,
           user: document.getElementById('userName').value.trim(),
+          type: data.type,
+          price: data.price,
           method: chosenMethod,
           snacks: selectedSnacks,
           timestamp: Date.now()
@@ -234,12 +263,11 @@
 
       await new Promise(r => setTimeout(r, 2000));
       await batch.commit();
-      alert("Reservation confirmed with snacks!");
+      alert("Reservation confirmed! Enjoy the show.");
       window.location.reload();
     };
 
     document.getElementById('closeSheetBtn').onclick = () => window.location.reload();
-
     loadSeats();
   </script>
 </body>
