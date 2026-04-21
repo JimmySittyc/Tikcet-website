@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Teatro Don Bosco | iOS 26 Premium</title>
+  <title>Teatro Don Bosco | Premium Experience</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
@@ -11,7 +11,7 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: radial-gradient(circle at top left, #1e293b, #0f172a, #000000);
       min-height: 100vh;
-      overflow-x: hidden;
+      overflow: hidden;
     }
     .glass-card {
       background: rgba(255, 255, 255, 0.03);
@@ -20,71 +20,106 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 2.5rem;
     }
-    .segmented-control {
+    .payment-sheet {
+      transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+      transform: translateY(100%);
+    }
+    .payment-sheet.active { transform: translateY(0); }
+    
+    .snack-card {
       background: rgba(255, 255, 255, 0.05);
-      border-radius: 1rem;
-      padding: 4px;
-      display: flex;
-      gap: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
     }
-    .segment-btn {
-      flex: 1;
-      padding: 8px 0;
-      border-radius: 0.75rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      transition: all 0.2s ease;
+    .snack-card.selected {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
     }
-    .segment-active {
-      background: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-    .seat { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .seat:active { transform: scale(0.9); }
+    .seat { transition: all 0.2s ease; }
+    .hidden-step { display: none; }
   </style>
 </head>
 
-<body class="text-white flex flex-col items-center justify-center p-4 sm:p-8">
+<body class="text-white flex flex-col items-center justify-center p-4">
 
-  <div class="glass-card w-full max-w-2xl p-8 shadow-2xl">
-    
+  <div class="glass-card w-full max-w-2xl p-8 shadow-2xl relative z-10">
     <header class="text-center mb-6">
         <h1 class="text-4xl font-semibold tracking-tight mb-2">Teatro Don Bosco</h1>
-        <p class="text-gray-400 text-sm">Select seats and ticket type</p>
+        <p class="text-gray-400 text-sm">Secure Seat Reservation</p>
     </header>
 
     <div class="mb-6">
-      <input 
-        type="text" 
-        id="userName" 
-        placeholder="Enter your name" 
-        class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-center text-lg font-light placeholder:text-gray-500"
-      />
+      <input type="text" id="userName" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-center text-lg font-light"/>
     </div>
 
     <div class="mb-8">
-      <p class="text-[10px] uppercase tracking-widest text-gray-500 text-center mb-3">Currently Selecting For</p>
-      <div class="segmented-control max-w-xs mx-auto">
-        <button id="adultMode" class="segment-btn segment-active">Adult ($15)</button>
-        <button id="childMode" class="segment-btn text-gray-400">Child ($8)</button>
+      <div class="flex bg-white/5 p-1 rounded-xl max-w-xs mx-auto">
+        <button id="adultMode" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white/10">Adult $15</button>
+        <button id="childMode" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-500">Child $8</button>
       </div>
     </div>
 
-    <div class="w-full h-1 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent mb-12 relative">
-        <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.4em] text-gray-500">Stage</span>
-    </div>
+    <div id="seat-container" class="grid grid-cols-10 gap-2 mb-10 justify-center"></div>
 
-    <div class="flex justify-center mb-8 overflow-x-auto pb-4">
-        <div id="seat-container" class="grid grid-cols-10 gap-3"></div>
-    </div>
-
-    <button 
-      id="payReserveBtn"
-      class="w-full bg-white text-black font-semibold py-5 rounded-3xl hover:bg-gray-100 active:scale-[0.97] transition-all flex flex-col items-center justify-center shadow-2xl"
-    >
+    <button id="openPaymentBtn" class="w-full bg-white text-black font-semibold py-5 rounded-3xl active:scale-[0.97] transition-all flex flex-col items-center justify-center shadow-2xl">
       <span id="btnText">Select Seats</span>
-      <span id="btnSubtext" class="text-[10px] opacity-60 uppercase tracking-tighter">Choose your spots</span>
+      <span class="text-[10px] opacity-60 uppercase">Continue to Checkout</span>
     </button>
+  </div>
+
+  <div id="paymentOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-20"></div>
+  
+  <div id="paymentSheet" class="payment-sheet fixed bottom-0 left-0 right-0 z-30 bg-[#1c1c1e] rounded-t-[2.5rem] p-8 pb-12 shadow-[0_-20px_40px_rgba(0,0,0,0.5)] max-w-2xl mx-auto border-t border-white/10">
+    <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-8"></div>
+
+    <div id="step1">
+      <h2 class="text-2xl font-semibold mb-6 text-center">Payment Method</h2>
+      <div class="space-y-4">
+        <button onclick="goToSnacks('QR')" class="w-full flex items-center gap-4 bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
+          <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-xl text-blue-400">📱</div>
+          <div class="text-left"><p class="font-semibold">QR Transfer</p><p class="text-xs text-gray-500">Instant banking</p></div>
+        </button>
+        <button onclick="goToSnacks('Card')" class="w-full flex items-center gap-4 bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
+          <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-xl text-purple-400">💳</div>
+          <div class="text-left"><p class="font-semibold">Credit Card</p><p class="text-xs text-gray-500">Visa / Mastercard</p></div>
+        </button>
+      </div>
+    </div>
+
+    <div id="step2" class="hidden-step">
+      <h2 class="text-2xl font-semibold mb-1 text-center">Enjoy the Show?</h2>
+      <p class="text-gray-500 text-sm text-center mb-8">Add a snack to complete your experience</p>
+      
+      <div class="grid grid-cols-2 gap-4 mb-8">
+        <div id="snack-popcorn" onclick="toggleSnack('popcorn', 7)" class="snack-card p-6 rounded-3xl text-center cursor-pointer">
+          <div class="text-4xl mb-3">🍿</div>
+          <p class="font-bold">Popcorn</p>
+          <p class="text-xs text-gray-400">Large • $7.00</p>
+        </div>
+        <div id="snack-soda" onclick="toggleSnack('soda', 5)" class="snack-card p-6 rounded-3xl text-center cursor-pointer">
+          <div class="text-4xl mb-3">🥤</div>
+          <p class="font-bold">Soda</p>
+          <p class="text-xs text-gray-400">Chilled • $5.00</p>
+        </div>
+      </div>
+
+      <div class="border-t border-white/5 pt-6 mb-6">
+        <div class="flex justify-between text-sm text-gray-400 mb-2">
+            <span>Seats Subtotal</span>
+            <span id="seatPriceLabel">$0</span>
+        </div>
+        <div class="flex justify-between text-lg font-bold">
+            <span>Final Total</span>
+            <span id="finalTotalLabel">$0</span>
+        </div>
+      </div>
+
+      <button onclick="finalizeTransaction()" class="w-full bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
+        Pay & Confirm
+      </button>
+    </div>
+
+    <button id="closeSheetBtn" class="w-full mt-6 py-2 text-gray-600 text-sm font-medium">Cancel</button>
   </div>
 
   <script type="module">
@@ -103,116 +138,107 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const seatContainer = document.getElementById("seat-container");
-    const payReserveBtn = document.getElementById("payReserveBtn");
-    const btnText = document.getElementById("btnText");
-    const btnSubtext = document.getElementById("btnSubtext");
-    const userNameInput = document.getElementById("userName");
-    
-    // UI Selectors
-    const adultBtn = document.getElementById("adultMode");
-    const childBtn = document.getElementById("childMode");
+    let currentTicketType = 'adult';
+    let selectedSeats = new Map();
+    let selectedSnacks = { popcorn: false, soda: false };
+    let chosenMethod = '';
+    const PRICES = { adult: 15, child: 8, popcorn: 7, soda: 5 };
 
-    let currentTicketType = 'adult'; // adult or child
-    let selectedSeats = new Map(); // seatId -> { type: 'adult'|'child', price: number }
+    // Mode Toggles
+    document.getElementById('adultMode').onclick = () => setType('adult');
+    document.getElementById('childMode').onclick = () => setType('child');
 
-    const PRICES = { adult: 15, child: 8 };
+    function setType(type) {
+      currentTicketType = type;
+      document.getElementById('adultMode').className = type === 'adult' ? 'flex-1 py-2 rounded-lg text-xs font-bold bg-white/10' : 'flex-1 py-2 rounded-lg text-xs font-bold text-gray-500';
+      document.getElementById('childMode').className = type === 'child' ? 'flex-1 py-2 rounded-lg text-xs font-bold bg-white/10' : 'flex-1 py-2 rounded-lg text-xs font-bold text-gray-500';
+    }
 
-    // Toggle logic for Ticket Type
-    adultBtn.onclick = () => { 
-        currentTicketType = 'adult'; 
-        adultBtn.classList.add('segment-active'); adultBtn.classList.remove('text-gray-400');
-        childBtn.classList.remove('segment-active'); childBtn.classList.add('text-gray-400');
-    };
-    childBtn.onclick = () => { 
-        currentTicketType = 'child'; 
-        childBtn.classList.add('segment-active'); childBtn.classList.remove('text-gray-400');
-        adultBtn.classList.remove('segment-active'); adultBtn.classList.add('text-gray-400');
-    };
-
+    // Load and Render
     async function loadSeats() {
       const querySnapshot = await getDocs(collection(db, "seats"));
-      const takenSeats = new Set();
-      querySnapshot.forEach(docSnap => { if (docSnap.data().taken) takenSeats.add(docSnap.id); });
-      renderSeats(takenSeats);
+      const taken = new Set();
+      querySnapshot.forEach(d => { if(d.data().taken) taken.add(d.id); });
+      renderGrid(taken);
     }
 
-    function updateButtonUI() {
-      if (selectedSeats.size > 0) {
-        let total = 0;
-        selectedSeats.forEach(val => total += val.price);
-        btnText.innerText = `Reserve ${selectedSeats.size} Seats`;
-        btnSubtext.innerText = `Total Amount: $${total}.00`;
-      } else {
-        btnText.innerText = "Select Seats";
-        btnSubtext.innerText = "Choose your spots";
-      }
-    }
-
-    function renderSeats(takenSeats) {
-      seatContainer.innerHTML = "";
+    function renderGrid(taken) {
+      const container = document.getElementById('seat-container');
+      container.innerHTML = "";
       for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 10; c++) {
-          const seatId = String.fromCharCode(65 + r) + (c + 1);
-          const seat = document.createElement("div");
-          seat.innerText = seatId;
-          seat.className = "seat w-8 h-8 sm:w-10 sm:h-10 flex flex-col items-center justify-center rounded-xl text-[9px] font-bold select-none border border-white/5";
-
-          if (takenSeats.has(seatId)) {
-            seat.classList.add("bg-white/5", "text-white/10");
-          } else {
-            seat.classList.add("bg-white/10", "text-white/60", "cursor-pointer", "hover:bg-white/20");
-            
+        for (let c = 1; c <= 10; c++) {
+          const id = String.fromCharCode(65 + r) + c;
+          const seat = document.createElement('div');
+          seat.innerText = id;
+          seat.className = `seat w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-[9px] font-bold border border-white/5 ${taken.has(id) ? 'opacity-20' : 'bg-white/10 text-white/40 cursor-pointer hover:bg-white/20'}`;
+          
+          if(!taken.has(id)) {
             seat.onclick = () => {
-              if (selectedSeats.has(seatId)) {
-                selectedSeats.delete(seatId);
-                seat.classList.remove("bg-blue-500", "bg-purple-500", "text-white", "shadow-lg");
-                seat.classList.add("bg-white/10", "text-white/60");
-                seat.innerHTML = seatId;
+              if(selectedSeats.has(id)) {
+                selectedSeats.delete(id);
+                seat.className = "seat w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-[9px] font-bold border border-white/5 bg-white/10 text-white/40 cursor-pointer hover:bg-white/20";
               } else {
-                const price = PRICES[currentTicketType];
-                selectedSeats.set(seatId, { type: currentTicketType, price: price });
-                
-                seat.classList.remove("bg-white/10", "text-white/60");
-                // Color coding: Blue for Adult, Purple for Child
-                const bgColor = currentTicketType === 'adult' ? 'bg-blue-500' : 'bg-purple-500';
-                seat.classList.add(bgColor, "text-white", "shadow-lg");
-                seat.innerHTML = `<span>${seatId}</span><span class="text-[7px] opacity-70">${currentTicketType[0].toUpperCase()}</span>`;
+                selectedSeats.set(id, { type: currentTicketType, price: PRICES[currentTicketType] });
+                seat.className = `seat w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-[9px] font-bold border border-white/5 ${currentTicketType === 'adult' ? 'bg-blue-500' : 'bg-purple-500'} text-white shadow-lg cursor-pointer`;
               }
-              updateButtonUI();
+              document.getElementById('btnText').innerText = selectedSeats.size > 0 ? `Reserve ${selectedSeats.size} Seats` : "Select Seats";
             };
           }
-          seatContainer.appendChild(seat);
+          container.appendChild(seat);
         }
       }
     }
 
-    payReserveBtn.onclick = async () => {
-      const name = userNameInput.value.trim();
-      if (!name || selectedSeats.size === 0) { alert("Complete your name and selection."); return; }
-
-      try {
-        payReserveBtn.disabled = true;
-        btnText.innerText = "Authorizing FaceID...";
-        
-        const batch = writeBatch(db);
-        selectedSeats.forEach((data, seatId) => {
-          batch.set(doc(db, "seats", seatId), {
-            taken: true,
-            user: name,
-            type: data.type,
-            price: data.price,
-            timestamp: Date.now()
-          });
-        });
-
-        await new Promise(res => setTimeout(res, 1800));
-        await batch.commit();
-
-        alert("Reservation Complete!");
-        window.location.reload(); 
-      } catch (e) { console.error(e); payReserveBtn.disabled = false; }
+    // Payment Flow
+    document.getElementById('openPaymentBtn').onclick = () => {
+      if(!document.getElementById('userName').value || selectedSeats.size === 0) return alert("Fill name and pick seats");
+      document.getElementById('paymentSheet').classList.add('active');
+      document.getElementById('paymentOverlay').classList.replace('opacity-0', 'opacity-100');
+      document.getElementById('paymentOverlay').classList.remove('pointer-events-none');
     };
+
+    window.goToSnacks = (method) => {
+      chosenMethod = method;
+      document.getElementById('step1').classList.add('hidden-step');
+      document.getElementById('step2').classList.remove('hidden-step');
+      calculateFinalTotal();
+    };
+
+    window.toggleSnack = (snack, price) => {
+      selectedSnacks[snack] = !selectedSnacks[snack];
+      document.getElementById(`snack-${snack}`).classList.toggle('selected');
+      calculateFinalTotal();
+    };
+
+    function calculateFinalTotal() {
+      let seatTotal = 0;
+      selectedSeats.forEach(v => seatTotal += v.price);
+      let snackTotal = (selectedSnacks.popcorn ? PRICES.popcorn : 0) + (selectedSnacks.soda ? PRICES.soda : 0);
+      document.getElementById('seatPriceLabel').innerText = `$${seatTotal}.00`;
+      document.getElementById('finalTotalLabel').innerText = `$${seatTotal + snackTotal}.00`;
+    }
+
+    window.finalizeTransaction = async () => {
+      document.getElementById('step2').innerHTML = `<div class="py-20 text-center animate-pulse"><p class="text-xl font-semibold">Finalizing Payment...</p></div>`;
+      
+      const batch = writeBatch(db);
+      selectedSeats.forEach((data, id) => {
+        batch.set(doc(db, "seats", id), {
+          taken: true,
+          user: document.getElementById('userName').value.trim(),
+          method: chosenMethod,
+          snacks: selectedSnacks,
+          timestamp: Date.now()
+        });
+      });
+
+      await new Promise(r => setTimeout(r, 2000));
+      await batch.commit();
+      alert("Reservation confirmed with snacks!");
+      window.location.reload();
+    };
+
+    document.getElementById('closeSheetBtn').onclick = () => window.location.reload();
 
     loadSeats();
   </script>
